@@ -48,7 +48,7 @@ jobs:
       - name: Push Docker Image to GAR
         uses: a94763075/push-to-gar-github-action@v0.3.1
         with:
-          gcloud_service_key: $HOME/config/google-credentials.json
+          gcloud_service_key: ${{ secrets.GOOGLE_CREDENTIALS }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           registry: ${{ secrets.GAR_REGISTRY }}
           repository: ${{ secrets.GAR_REPOSITORY }}
