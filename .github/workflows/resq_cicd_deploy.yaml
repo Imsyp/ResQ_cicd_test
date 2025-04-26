@@ -40,13 +40,6 @@ jobs:
             mkdir -p $OCCUPY_SECRET_DIR
             echo $OCCUPY_SECRET | base64 --decode > $OCCUPY_SECRET_DIR/$OCCUPY_SECRET_DIR_FILE_NAME
 
-      - name: Decode GOOGLE_CREDENTIALS and set as ENV
-        id: decode_google_credentials
-        run: |
-          echo "GCLOUD_SERVICE_KEY=$(echo $GOOGLE_CREDENTIALS | base64 --decode)" >> $GITHUB_ENV
-        env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-
       - name: Install Go
         uses: actions/setup-go@v4
         with:
@@ -55,7 +48,7 @@ jobs:
       - name: Push Docker Image to GAR
         uses: a94763075/push-to-gar-github-action@v0.3.1
         with:
-          gcloud_service_key: ${{ env.GCLOUD_SERVICE_KEY }}
+          gcloud_service_key: $HOME/config/google-credentials.json
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           registry: ${{ secrets.GAR_REGISTRY }}
           repository: ${{ secrets.GAR_REPOSITORY }}
