@@ -56,9 +56,10 @@ jobs:
           image_tags: 'latest,stable'
           dockerfile: './Dockerfile'
           free_docker_build_parameter: '--no-cache'
+          
   deploy:
     runs-on: ubuntu-22.04
-        
+    needs: build-and-push
     steps:
       - name: Deploy to GCE
         uses: appleboy/ssh-action@master
