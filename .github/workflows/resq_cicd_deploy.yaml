@@ -55,8 +55,6 @@ jobs:
           image_name: 'resq-server'
           image_tags: 'latest,stable'
           dockerfile: './Dockerfile'
-          stage: 'prod'
-          target: 'build-stage'
           free_docker_build_parameter: '--no-cache'
 
     # deploy:
