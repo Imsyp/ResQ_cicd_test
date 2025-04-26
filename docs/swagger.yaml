@@ -1,0 +1,255 @@
+basePath: /
+definitions:
+  model.ActionStep:
+    properties:
+      details:
+        items:
+          type: string
+        type: array
+      step:
+        type: string
+    type: object
+  model.MultiLangActions:
+    additionalProperties:
+      items:
+        $ref: '#/definitions/model.ActionStep'
+      type: array
+    type: object
+  model.MultilingualArray:
+    additionalProperties:
+      items:
+        type: string
+      type: array
+    type: object
+  model.MultilingualText:
+    additionalProperties:
+      type: string
+    type: object
+  model.Situation:
+    properties:
+      actions:
+        $ref: '#/definitions/model.MultiLangActions'
+      description:
+        $ref: '#/definitions/model.MultilingualArray'
+      emer_title:
+        $ref: '#/definitions/model.MultilingualText'
+      emoji:
+        type: string
+      index:
+        type: integer
+      slug:
+        type: string
+    type: object
+host: localhost:5100
+info:
+  contact: {}
+  description: API documentation
+  title: SDGP-team5-ResQ-BE
+  version: "1.0"
+paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      description: check if the server is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Server is running
+          schema:
+            type: string
+      summary: check server status
+      tags:
+      - Status
+  /api/auth/callback:
+    get:
+      description: Handles the callback from Google after user grants permission,
+        generates JWT.
+      parameters:
+      - description: Authorization Code
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Missing code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to fetch user info or generate JWT
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Google OAuth2 Callback
+      tags:
+      - auth
+  /api/auth/login:
+    get:
+      description: Redirects the user to Google login page for authentication.
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect to Google OAuth2 login
+          schema:
+            type: string
+      summary: Google OAuth2 Login
+      tags:
+      - auth
+  /api/auth/protected:
+    get:
+      description: Returns user info if the provided JWT token is valid. If the token
+        is invalid or expired, the request is unauthorized.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authorized"  // Successful response with user info
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized"  // Unauthorized if token is invalid or missing
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth  // This indicates the need for a Bearer token in the Authorization header: []
+      summary: Protected route that requires a valid JWT token
+      tags:
+      - auth
+  /api/auth/refresh-token:
+    post:
+      consumes:
+      - application/json
+      description: Accepts a valid refresh token and issues a new access token if
+        the refresh token is valid. The refresh token should be passed in the request
+        body.
+      parameters:
+      - description: The refresh token used to generate a new access token
+        in: body
+        name: refresh_token
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: access_token"  // Returns the newly generated access token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request"  // Invalid or malformed request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid refresh token"  // If the refresh token is invalid
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Could not generate access token"  // If there is an issue generating
+            the access token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refreshes the access token using a valid refresh token
+      tags:
+      - auth
+  /situation/actions/{index}/{language}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the actions for a specific situation based on its index
+        (numerical ID).
+      parameters:
+      - description: Situation Index
+        in: path
+        name: index
+        required: true
+        type: integer
+      - default: en
+        description: Language
+        in: path
+        name: language
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved situation and actions
+          schema:
+            $ref: '#/definitions/model.Situation'
+        "400":
+          description: error message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: error message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Actions by Situation Index
+      tags:
+      - situation
+  /situation/actions/case/{slug}/{language}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the actions for a specific situation based on its slug
+        (text-based ID).
+      parameters:
+      - description: Situation Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      - default: en
+        description: Language
+        in: path
+        name: language
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved situation and actions
+          schema:
+            $ref: '#/definitions/model.Situation'
+        "404":
+          description: error message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Actions by Situation Slug
+      tags:
+      - situation
+swagger: "2.0"

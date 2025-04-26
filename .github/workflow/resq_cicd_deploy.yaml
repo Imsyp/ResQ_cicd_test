@@ -1,0 +1,95 @@
+name: CI/CD
+
+on:
+    push:
+        branches: ["main"]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Copy env file
+        run: |
+          echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env
+          echo "GOOGLE_AUTH_CLIENT_ID=$GOOGLE_AUTH_CLIENT_ID" >> .env
+          echo "GOOGLE_AUTH_CLIENT_SECRET=$GOOGLE_AUTH_CLIENT_SECRET" >> .env
+          echo "GOOGLE_AUTH_REDIRECT_URL=$GOOGLE_AUTH_REDIRECT_URL" >> .env
+          echo "GOOGLE_CREDENTIALS=$GOOGLE_CREDENTIALS_LOCATION" >> .env
+          echo "JWT_SECRET_KEY=$JWT_SECRET_KEY" >> .env
+          echo "MONGO_URI=$MONGO_URI" >> .env
+        env:
+          GEMINI_API_KEY: ${{secrets.GEMINI_API_KEY}}
+          GOOGLE_AUTH_CLIENT_ID: ${{secrets.GOOGLE_AUTH_CLIENT_ID}}
+          GOOGLE_AUTH_CLIENT_SECRET: ${{secrets.GOOGLE_AUTH_CLIENT_SECRET}}
+          GOOGLE_AUTH_REDIRECT_URL: ${{secrets.GOOGLE_AUTH_REDIRECT_URL}}
+          GOOGLE_CREDENTIALS: ${{secrets.GOOGLE_CREDENTIALS_LOCATION}}
+          JWT_SECRET_KEY: ${{secrets.JWT_SECRET_KEY}}
+          MONGO_URI: ${{secrets.MONGO_URI}}
+
+      # server account key 
+      - name: Copy Google Credentials
+        env:
+          OCCUPY_SECRET: ${{ secrets.GOOGLE_CREDENTIALS }}
+          OCCUPY_SECRET_DIR: ./config
+          OCCUPY_SECRET_DIR_FILE_NAME: google-credentials.json
+        run: echo $OCCUPY_SECRET | base64 --decode > $OCCUPY_SECRET_DIR/$OCCUPY_SECRET_DIR_FILE_NAME
+
+      - name: Decode GOOGLE_CREDENTIALS and set as ENV
+        id: decode_google_credentials
+        run: |
+          echo "GCLOUD_SERVICE_KEY=$(echo $GOOGLE_CREDENTIALS | base64 --decode)" >> $GITHUB_ENV
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23.1'
+
+      - name: Push Docker Image to GAR
+        uses: a94763075/push-to-gar-github-action@v0.3.1
+        with:
+          gcloud_service_key: ${{ env.GCLOUD_SERVICE_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          registry: ${{ secrets.GAR_REGISTRY }}
+          repository: ${{ secrets.GAR_REPOSITORY }}
+          image_name: 'resq-server'
+          image_tags: 'latest,stable'
+          dockerfile: './Dockerfile'
+          stage: 'prod'
+          target: 'build-stage'
+          free_docker_build_parameter: '--no-cache'
+
+    # deploy:
+    #     runs-on: ubuntu-latest
+    #     needs: build
+    #     steps:
+    #         - name: Checkout code
+    #           uses: actions/checkout@v4
+            
+    #         - name: Setup SSH
+    #           uses: webfactory/ssh-agent@v0.9.0
+    #           with:
+    #             ssh-private-key: ${{ secrets.EC2_KEY }}
+
+    #         - name: Transfer Docker Compose template to EC2
+    #           run: |
+    #             scp -o StrictHostKeyChecking=no ./${{github.event.repository.name}}/docker-compose.yml.template ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/docker-compose.yml.template
+            
+    #         - name: Deploy to EC2
+    #           run: |
+    #             ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+    #                 export GO_ENV=production
+    #                 export DOTENV_KEY="${{ secrets.DOTENV_KEY }}"
+    #                 export CERT_CACHE="${{secrets.CERT_CACHE_DIR}}"
+    #                 export LOGFILE_PATH="${{secrets.LOGFILE_PATH}}"
+    #                 echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | sudo docker login --username ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+
+    #                 envsubst < docker-compose.yml.template > docker-compose.yml
+    #                 sudo docker-compose down --rmi all
+    #                 sudo docker-compose up --build -d
+    #             EOF
