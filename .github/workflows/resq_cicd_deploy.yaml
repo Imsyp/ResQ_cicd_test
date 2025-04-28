@@ -16,7 +16,7 @@ jobs:
         run: |
           echo "GEMINI_API_KEY=$GEMINI_API_KEY" 
           echo "GOOGLE_AUTH_CLIENT_ID=$GOOGLE_AUTH_CLIENT_ID" >> .env
-          echo "GOOGLE_AUTH_CLIENT_SECRET=$GOOGLE_AUTH_CLIENT_SECRET" >> .env
+          echo $GOOGLE_AUTH_CLIENT_SECRET
           echo "GOOGLE_AUTH_REDIRECT_URL=$GOOGLE_AUTH_REDIRECT_URL" >> .env
           echo "GOOGLE_CREDENTIALS=$GOOGLE_CREDENTIALS_LOCATION" >> .env
           echo "JWT_SECRET_KEY=$JWT_SECRET_KEY" >> .env
