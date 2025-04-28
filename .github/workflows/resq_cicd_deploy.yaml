@@ -79,5 +79,8 @@ jobs:
                 docker stop ${{ secrets.CONTAINER_NAME }} || true
                 docker rm ${{ secrets.CONTAINER_NAME }} || true
     
+                # .env 파일 생성 (GitHub Secrets에서 가져옴)
+                echo "${{ secrets.ENV }}" > /app/.env
+        
                 # 새 컨테이너 실행
-                docker run -d --name ${{ secrets.CONTAINER_NAME }} -p 5100:5100 asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GAR_REPOSITORY }}/resq-server:latest
+                docker run -d --pull=always --name ${{ secrets.CONTAINER_NAME }} -p 5100:5100 --env-file /app/.env asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GAR_REPOSITORY }}/resq-server:latest
